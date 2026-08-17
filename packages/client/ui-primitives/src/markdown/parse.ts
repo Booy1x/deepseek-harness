@@ -33,12 +33,19 @@ export function parseGfm(text: string): Root {
 /**
  * Parse GFM markdown plus TeX math with the compatibility delimiters
  * (the settled arm's grammar).
+ *
+ * Bare single dollars are deliberately not math (`singleDollarTextMath:
+ * false`): prose is full of currency amounts such as "$0.094/M" and "$1",
+ * which the upstream tokenizer would swallow into KaTeX as soon as a second
+ * dollar appears, mangling the surrounding sentence into a formula. Math
+ * stays available through `\(…\)`, `\[…\]`, and `$$…$$`, all handled by
+ * `mathCompatibility()` plus the multi-dollar text construct.
  * @param text - Markdown source.
  * @returns The mdast root.
  */
 export function parseGfmWithMath(text: string): Root {
   return fromMarkdown(text, {
-    extensions: [gfm(), cjkFriendlyStrong(), mathCompatibility(), math()],
+    extensions: [gfm(), cjkFriendlyStrong(), mathCompatibility(), math({ singleDollarTextMath: false })],
     mdastExtensions: [gfmFromMarkdown(), mathFromMarkdown()],
   })
 }
