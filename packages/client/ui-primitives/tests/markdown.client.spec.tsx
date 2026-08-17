@@ -95,7 +95,7 @@ describe('MarkdownText', () => {
       '`**注意：**内容`',
       '**Notice:**text',
       '*提醒！*继续',
-      '$**注意：**内容$',
+      '\\(**注意：**内容\\)',
       '```md',
       '**注意：**内容',
       '```',
@@ -294,13 +294,13 @@ describe('MarkdownText', () => {
 
   it('renders inline and display TeX through KaTeX without enabling trusted commands', () => {
     const source = [
-      'Einstein wrote $E = mc^2$.',
+      'Einstein wrote \\(E = mc^2\\).',
       '',
       '$$',
       '\\frac{\\partial \\mathbf{u}}{\\partial t} + (\\mathbf{u} \\cdot \\nabla)\\mathbf{u} = -\\frac{1}{\\rho}\\nabla p',
       '$$',
       '',
-      '$\\href{javascript:alert(1)}{unsafe}$',
+      '\\(\\href{javascript:alert(1)}{unsafe}\\)',
     ].join('\n')
     const { container } = render(<MarkdownText text={source} />)
 
@@ -312,7 +312,7 @@ describe('MarkdownText', () => {
 
   it('renders common TeX delimiters and same-line tagged display blocks after the reply settles', () => {
     const source = [
-      'Inline dollar $\\theta$ and backslash \\(\\frac{1}{5}\\).',
+      'Inline \\(\\theta\\) and backslash \\(\\frac{1}{5}\\).',
       '',
       '\\[\\frac{\\pi}{4} < \\theta < \\frac{\\pi}{2}\\]',
       '',
@@ -320,7 +320,7 @@ describe('MarkdownText', () => {
       '',
       '| Symbol | Value |',
       '| --- | --- |',
-      '| $\\theta$ | \\(\\frac{1}{5}\\) |',
+      '| \\(\\theta\\) | \\(\\frac{1}{5}\\) |',
     ].join('\n')
     const { container } = render(<MarkdownText text={source} />)
 
@@ -447,6 +447,27 @@ describe('MarkdownText', () => {
 
     expect(performance.now() - startedAt).toBeLessThan(3_000)
     expect(container.querySelector('.katex')).toBeNull()
+  })
+
+  it('keeps currency amounts and prose dollars literal while TeX delimiters still render', () => {
+    const source = [
+      'Flash 输出 $0.094/M，可以先花 $1 买 Go 套餐；转义 \\$5 也保持字面。',
+      '',
+      '| 价格 |',
+      '| --- |',
+      '| $9.9 |',
+      '',
+      '\\(x^2\\) inline and $$y$$ too.',
+    ].join('\n')
+    const { container } = render(<MarkdownText text={source} />)
+
+    expect(container.querySelectorAll('.katex')).toHaveLength(2)
+    expect(container.querySelector('.katex-display')).toBeNull()
+    expect(container.querySelector('.katex-error')).toBeNull()
+    expect(container.textContent).toContain('$0.094')
+    expect(container.textContent).toContain('$1')
+    expect(container.textContent).toContain('$5')
+    expect(container.querySelector('table')?.textContent).toContain('$9.9')
   })
 
   it('leaves TeX-looking fenced code literal', () => {
